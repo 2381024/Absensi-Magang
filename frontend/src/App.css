@@ -354,6 +354,14 @@
   background: #d1d5db !important;
 }
 
+/* ===== Loading Spinner ===== */
+.loading-spinner {
+  text-align: center;
+  padding: 2rem;
+  font-size: 1rem;
+  color: #6b7280;
+}
+
 /* ===== Error Message ===== */
 .error {
   background: #fee2e2;

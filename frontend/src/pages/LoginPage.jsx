@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../api/client";
@@ -7,20 +7,24 @@ export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const { login, user } = useAuth();
+  const [submitting, setSubmitting] = useState(false);
+  const { login, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
-  // Already logged in → redirect
-  if (user) {
-    navigate(user.role === "admin" ? "/admin" : "/dashboard", { replace: true });
-    return null;
-  }
+  // Redirect if already logged in (only after auth check is complete)
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate(user.role === "admin" ? "/admin" : "/dashboard", { replace: true });
+    }
+  }, [authLoading, user, navigate]);
+
+  // Show spinner while checking existing token
+  if (authLoading) return <div className="login-page"><div className="loading-spinner">Loading...</div></div>;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    setLoading(true);
+    setSubmitting(true);
 
     try {
       const data = await api.post("/auth/login", { username, password });
@@ -29,7 +33,7 @@ export default function LoginPage() {
     } catch (err) {
       setError(err.message);
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -63,8 +67,8 @@ export default function LoginPage() {
           />
         </label>
 
-        <button type="submit" disabled={loading}>
-          {loading ? "Logging in..." : "Login"}
+        <button type="submit" disabled={submitting}>
+          {submitting ? "Logging in..." : "Login"}
         </button>
       </form>
     </div>
