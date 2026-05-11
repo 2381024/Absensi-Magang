@@ -1,29 +1,35 @@
-import { useState, useEffect } from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
+import AdminRoute from "./components/AdminRoute";
+import LoginPage from "./pages/LoginPage";
+import UserDashboard from "./pages/UserDashboard";
+import AdminDashboard from "./pages/AdminDashboard";
 import "./App.css";
 
-function App() {
-  const [status, setStatus] = useState(null);
-
-  useEffect(() => {
-    fetch("/api/health")
-      .then((res) => res.json())
-      .then((data) => setStatus(data))
-      .catch((err) => setStatus({ status: "error", message: err.message }));
-  }, []);
-
+export default function App() {
   return (
-    <div className="app">
-      <h1>Absensi Magang</h1>
-      <div className="status">
-        <span>API Status: </span>
-        {status ? (
-          <code>{JSON.stringify(status, null, 2)}</code>
-        ) : (
-          <span>Connecting...</span>
-        )}
-      </div>
-    </div>
+    <AuthProvider>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <UserDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <AdminDashboard />
+            </AdminRoute>
+          }
+        />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    </AuthProvider>
   );
 }
-
-export default App;
