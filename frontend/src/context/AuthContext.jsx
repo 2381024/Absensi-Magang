@@ -6,7 +6,7 @@ const MOCK_TOKEN_KEY = "mock_token";
 const REAL_TOKEN_KEY = "token";
 
 function getStoredToken() {
-  return localStorage.getItem(MOCK_TOKEN_KEY) || localStorage.getItem(REAL_TOKEN_KEY);
+  return localStorage.getItem(REAL_TOKEN_KEY) || localStorage.getItem(MOCK_TOKEN_KEY);
 }
 
 function decodeToken(token) {
@@ -45,7 +45,14 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = useCallback((newToken, newUser) => {
-    localStorage.setItem(MOCK_TOKEN_KEY, newToken);
+    if (!newToken) return;
+    if (newToken.includes(".")) {
+      localStorage.setItem(REAL_TOKEN_KEY, newToken);
+      localStorage.removeItem(MOCK_TOKEN_KEY);
+    } else {
+      localStorage.setItem(MOCK_TOKEN_KEY, newToken);
+      localStorage.removeItem(REAL_TOKEN_KEY);
+    }
     setUser(newUser);
   }, []);
 

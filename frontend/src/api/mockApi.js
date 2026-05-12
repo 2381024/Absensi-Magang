@@ -50,6 +50,14 @@ function setGeofences(geofences) {
   write("mock_geofences", geofences);
 }
 
+function getCompanies() {
+  return read("mock_companies") || [];
+}
+
+function setCompanies(companies) {
+  write("mock_companies", companies);
+}
+
 function isGeofenceEnabled() {
   return read("mock_geofence_enabled") ?? true;
 }
@@ -99,6 +107,22 @@ function seedIfEmpty() {
 
   if (!read("mock_shifts")) {
     setShifts([]);
+  }
+
+  if (!read("mock_companies")) {
+    setCompanies([
+      {
+        id: 1,
+        name: "PT Teknologi Indonesia",
+        address: "Jl. Sudirman No. 123, Jakarta",
+        contact_person: "Budi Santoso",
+        contact_email: "budi@techindo.co.id",
+        contact_phone: "081234567890",
+        status: "active",
+        created_at: "2026-01-01T00:00:00.000Z",
+        updated_at: "2026-01-01T00:00:00.000Z",
+      },
+    ]);
   }
 }
 
@@ -209,6 +233,17 @@ export const mockApi = {
       users[idx].password_plain = data.password;
     }
     if (data.role !== undefined) users[idx].role = data.role;
+    if (data.full_name !== undefined) users[idx].full_name = data.full_name;
+    if (data.nim !== undefined) users[idx].nim = data.nim;
+    if (data.major !== undefined) users[idx].major = data.major;
+    if (data.internship_location !== undefined) users[idx].internship_location = data.internship_location;
+    if (data.division !== undefined) users[idx].division = data.division;
+    if (data.field_mentor !== undefined) users[idx].field_mentor = data.field_mentor;
+    if (data.start_date !== undefined) users[idx].start_date = data.start_date;
+    if (data.end_date !== undefined) users[idx].end_date = data.end_date;
+    if (data.internship_status !== undefined) users[idx].internship_status = data.internship_status;
+    if (data.target_hours !== undefined) users[idx].target_hours = data.target_hours;
+    if (data.profile_photo !== undefined) users[idx].profile_photo = data.profile_photo;
     users[idx].updated_at = new Date().toISOString();
     setUsers(users);
     const { password_hash, password_plain, ...safeUser } = users[idx];
@@ -406,5 +441,167 @@ export const mockApi = {
     shifts.splice(idx, 1);
     setShifts(shifts);
     return { message: "Shift deleted" };
+  },
+
+  /* ---- Companies (admin) ---- */
+  async getCompanies() {
+    await delay();
+    return getCompanies();
+  },
+
+  async getCompany(id) {
+    await delay();
+    const company = getCompanies().find((c) => c.id == id);
+    if (!company) throw new Error("Company not found");
+    return company;
+  },
+
+  async createCompany(data) {
+    await delay();
+    const all = getCompanies();
+    const newCompany = {
+      id: all.length ? Math.max(...all.map((c) => c.id)) + 1 : 1,
+      name: data.name,
+      address: data.address || null,
+      contact_person: data.contact_person || null,
+      contact_email: data.contact_email || null,
+      contact_phone: data.contact_phone || null,
+      status: data.status || "active",
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    all.push(newCompany);
+    setCompanies(all);
+    return newCompany;
+  },
+
+  async updateCompany(id, data) {
+    await delay();
+    const all = getCompanies();
+    const idx = all.findIndex((c) => c.id == id);
+    if (idx === -1) throw new Error("Company not found");
+    if (data.name !== undefined) all[idx].name = data.name;
+    if (data.address !== undefined) all[idx].address = data.address;
+    if (data.contact_person !== undefined) all[idx].contact_person = data.contact_person;
+    if (data.contact_email !== undefined) all[idx].contact_email = data.contact_email;
+    if (data.contact_phone !== undefined) all[idx].contact_phone = data.contact_phone;
+    if (data.status !== undefined) all[idx].status = data.status;
+    all[idx].updated_at = new Date().toISOString();
+    setCompanies(all);
+    return all[idx];
+  },
+
+  async deleteCompany(id) {
+    await delay();
+    const all = getCompanies();
+    const idx = all.findIndex((c) => c.id == id);
+    if (idx === -1) throw new Error("Company not found");
+    all.splice(idx, 1);
+    setCompanies(all);
+    return { message: "Company deleted" };
+  },
+
+  /* ---- Reports (admin) ---- */
+  async changePassword(currentPassword, newPassword) {
+    await delay();
+    const token = localStorage.getItem("mock_token");
+    if (!token) throw new Error("Not authenticated");
+    const user = verifyToken(token);
+    if (!user) throw new Error("Invalid token");
+
+    const users = getUsers();
+    const idx = users.findIndex((u) => u.id == user.id);
+    if (idx === -1) throw new Error("User not found");
+
+    if (users[idx].password_plain !== currentPassword) {
+      throw new Error("Current password is incorrect");
+    }
+
+    users[idx].password_hash = "$2a$10$fake_" + newPassword;
+    users[idx].password_plain = newPassword;
+    users[idx].updated_at = new Date().toISOString();
+    setUsers(users);
+    return { message: "Password changed successfully" };
+  },
+
+  async getAttendanceReport(params = {}) {
+    await delay();
+    let shifts = getShifts();
+    const users = getUsers();
+
+    const shiftsWithUsers = shifts.map((s) => ({
+      ...s,
+      username: users.find((u) => u.id == s.user_id)?.username || "Unknown",
+      full_name: users.find((u) => u.id == s.user_id)?.full_name || null,
+    }));
+
+    if (params.startDate) {
+      shiftsWithUsers = shiftsWithUsers.filter((s) => s.start_time >= params.startDate);
+    }
+    if (params.endDate) {
+      shiftsWithUsers = shiftsWithUsers.filter((s) => s.start_time <= params.endDate);
+    }
+    if (params.userId) {
+      shiftsWithUsers = shiftsWithUsers.filter((s) => s.user_id == params.userId);
+    }
+
+    return shiftsWithUsers.sort(
+      (a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime()
+    );
+  },
+
+  async getInternshipProgressReport() {
+    await delay();
+    const users = getUsers().filter((u) => u.role === "user");
+    const shifts = getShifts();
+
+    const usersWithProgress = users.map((user) => {
+      const userShifts = shifts.filter(
+        (s) => s.user_id == user.id && s.end_time && (s.attendance_type === "hadir" || s.attendance_type === undefined)
+      );
+      const totalHours = userShifts.reduce((acc, s) => {
+        const diff = new Date(s.end_time) - new Date(s.start_time);
+        return acc + (diff > 0 ? diff / 3600000 : 0);
+      }, 0);
+
+      const targetHours = user.target_hours || 480;
+      const progressPercent = targetHours ? Math.min(100, (totalHours / targetHours) * 100) : 0;
+      const remainingHours = Math.max(0, targetHours - totalHours);
+
+      return {
+        ...user,
+        total_shifts: userShifts.length,
+        total_hours: totalHours,
+        target_hours: targetHours,
+        progress_percent: progressPercent,
+        remaining_hours: remainingHours,
+        internship_status: user.internship_status || "active",
+      };
+    });
+
+    return usersWithProgress;
+  },
+
+  async getSummaryReport() {
+    await delay();
+    const users = getUsers();
+    const shifts = getShifts();
+    const today = new Date().toISOString().split("T")[0];
+    const todayShifts = shifts.filter((s) => s.start_time.startsWith(today));
+
+    const attendanceByType = {
+      hadir: todayShifts.filter((s) => s.attendance_type === "hadir" || s.attendance_type === undefined).length,
+      izin: todayShifts.filter((s) => s.attendance_type === "izin").length,
+      sakit: todayShifts.filter((s) => s.attendance_type === "sakit").length,
+      alpha: todayShifts.filter((s) => s.attendance_type === "alpha").length,
+    };
+
+    return {
+      totalInterns: users.filter((u) => u.role === "user").length,
+      totalShifts: shifts.length,
+      todayAttendance: todayShifts.length,
+      activeShifts: shifts.filter((s) => s.status === "active").length,
+      attendanceByType,
+    };
   },
 };

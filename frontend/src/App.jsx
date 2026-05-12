@@ -9,6 +9,7 @@ import AdminUsers from "./pages/AdminUsers";
 import AdminLogs from "./pages/AdminLogs";
 import AdminGeofence from "./pages/AdminGeofence";
 import LogDetail from "./pages/LogDetail";
+import Profile from "./pages/Profile";
 import InternProfile from "./pages/InternProfile";
 import "./App.css";
 
@@ -50,6 +51,16 @@ export default function App() {
           <Route path="logs/:id" element={<LogDetail />} />
           <Route path="geofence" element={<AdminGeofence />} />
         </Route>
+
+        {/* Current user's own profile */}
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Shared: view any intern's profile */}
         <Route

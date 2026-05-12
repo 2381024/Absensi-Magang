@@ -32,7 +32,7 @@ function AdminHome({ user, navigate }) {
     try {
       const [users, shifts, geofences] = await Promise.all([
         api.getUsers(),
-        api.getAllShifts(),
+        api.getShifts(),
         api.getGeofences(),
       ]);
       const active = shifts.filter((s) => s.status === "active");

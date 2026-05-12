@@ -13,7 +13,7 @@ router.use(requireAdmin);
 router.get("/", async (_req, res) => {
   try {
     const result = await db.query(
-      "SELECT id, username, role, created_at, updated_at FROM users ORDER BY id"
+      "SELECT id, username, role, full_name, nim, major, internship_location, division, internship_status, target_hours, profile_photo, created_at, updated_at FROM users ORDER BY id"
     );
     res.json(result.rows);
   } catch (err) {
@@ -27,7 +27,7 @@ router.get("/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const result = await db.query(
-      "SELECT id, username, role, created_at, updated_at FROM users WHERE id = $1",
+      "SELECT id, username, role, full_name, nim, major, internship_location, division, internship_status, target_hours, profile_photo, created_at, updated_at FROM users WHERE id = $1",
       [id]
     );
     if (result.rows.length === 0) {
@@ -43,7 +43,7 @@ router.get("/:id", async (req, res) => {
 // POST /api/users — create user
 router.post("/", async (req, res) => {
   try {
-    const { username, password, role } = req.body;
+    const { username, password, role, full_name, nim, major, internship_location, division, internship_status, target_hours, profile_photo } = req.body;
 
     if (!username || !password) {
       return res.status(400).json({ message: "Username and password required" });
@@ -56,8 +56,10 @@ router.post("/", async (req, res) => {
 
     const password_hash = await bcrypt.hash(password, 10);
     const result = await db.query(
-      "INSERT INTO users (username, password_hash, role) VALUES ($1, $2, $3) RETURNING id, username, role, created_at, updated_at",
-      [username, password_hash, role || "user"]
+      `INSERT INTO users (username, password_hash, role, full_name, nim, major, internship_location, division, internship_status, target_hours, profile_photo)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       RETURNING id, username, role, full_name, nim, major, internship_location, division, internship_status, target_hours, profile_photo, created_at, updated_at`,
+      [username, password_hash, role || "user", full_name, nim, major, internship_location, division, internship_status || "active", target_hours || 480, profile_photo]
     );
 
     res.status(201).json(result.rows[0]);
@@ -71,7 +73,7 @@ router.post("/", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const { username, password, role } = req.body;
+    const { username, password, role, full_name, nim, major, internship_location, division, internship_status, target_hours, profile_photo } = req.body;
 
     const existing = await db.query("SELECT id FROM users WHERE id = $1", [id]);
     if (existing.rows.length === 0) {
@@ -96,6 +98,38 @@ router.put("/:id", async (req, res) => {
       updates.push(`role = $${idx++}`);
       values.push(role);
     }
+    if (full_name !== undefined) {
+      updates.push(`full_name = $${idx++}`);
+      values.push(full_name);
+    }
+    if (nim !== undefined) {
+      updates.push(`nim = $${idx++}`);
+      values.push(nim);
+    }
+    if (major !== undefined) {
+      updates.push(`major = $${idx++}`);
+      values.push(major);
+    }
+    if (internship_location !== undefined) {
+      updates.push(`internship_location = $${idx++}`);
+      values.push(internship_location);
+    }
+    if (division !== undefined) {
+      updates.push(`division = $${idx++}`);
+      values.push(division);
+    }
+    if (internship_status !== undefined) {
+      updates.push(`internship_status = $${idx++}`);
+      values.push(internship_status);
+    }
+    if (target_hours !== undefined) {
+      updates.push(`target_hours = $${idx++}`);
+      values.push(target_hours);
+    }
+    if (profile_photo !== undefined) {
+      updates.push(`profile_photo = $${idx++}`);
+      values.push(profile_photo);
+    }
 
     if (updates.length === 0) {
       return res.status(400).json({ message: "No fields to update" });
@@ -105,7 +139,7 @@ router.put("/:id", async (req, res) => {
     values.push(id);
 
     const result = await db.query(
-      `UPDATE users SET ${updates.join(", ")} WHERE id = $${idx} RETURNING id, username, role, created_at, updated_at`,
+      `UPDATE users SET ${updates.join(", ")} WHERE id = $${idx} RETURNING id, username, role, full_name, nim, major, internship_location, division, internship_status, target_hours, profile_photo, created_at, updated_at`,
       values
     );
 

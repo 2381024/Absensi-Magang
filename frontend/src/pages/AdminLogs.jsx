@@ -20,7 +20,7 @@ export default function AdminLogs() {
   const loadData = async () => {
     try {
       const [shiftsData, usersData] = await Promise.all([
-        api.getAllShifts(),
+        api.getShifts(),
         api.getUsers(),
       ]);
       setAllShifts(shiftsData);
@@ -51,8 +51,10 @@ export default function AdminLogs() {
     return u ? u.username : userId;
   };
 
+  const selectedUserId = filterUserId ? Number(filterUserId) : null;
+
   const filtered = allShifts.filter((s) => {
-    if (filterUserId && s.user_id !== filterUserId) return false;
+    if (selectedUserId && s.user_id !== selectedUserId) return false;
     if (filterStatus && s.status !== filterStatus) return false;
     return true;
   });

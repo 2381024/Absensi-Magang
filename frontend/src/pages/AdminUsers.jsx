@@ -35,7 +35,7 @@ export default function AdminUsers() {
 
   const openEdit = (user) => {
     setEditingUser(user);
-    setForm({ username: user.username, password: "", name: user.name || "", role: user.role });
+    setForm({ username: user.username, password: "", name: user.full_name || "", role: user.role });
     setShowModal(true);
   };
 
@@ -45,10 +45,10 @@ export default function AdminUsers() {
     setError("");
     try {
       if (editingUser) {
-        await api.updateUser(editingUser.id, { name: form.name, role: form.role });
+        await api.updateUser(editingUser.id, { full_name: form.name, role: form.role });
         if (form.password) await api.updateUser(editingUser.id, { password: form.password });
       } else {
-        await api.createUser(form);
+        await api.createUser({ ...form, full_name: form.name });
       }
       setShowModal(false);
       loadUsers();
@@ -129,7 +129,7 @@ export default function AdminUsers() {
                 users.map((u) => (
                   <tr key={u.id}>
                     <td><strong>{u.username}</strong></td>
-                    <td>{u.name || "-"}</td>
+                    <td>{u.full_name || "-"}</td>
                     <td><span className={`badge badge-${u.role}`}>{u.role}</span></td>
                     <td>
                       <div className="actions-cell">
